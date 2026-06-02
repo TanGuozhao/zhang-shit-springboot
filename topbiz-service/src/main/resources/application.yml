@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: topbiz-service
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  session:
+    store-type: redis
+server:
+  port: 8080
+shiro:
+  loginUrl: /api/topbiz/auth/login
+  successUrl: /api/topbiz/platform/overview
+  unauthorizedUrl: /error/403
+  userNativeSessionManager: false
+topbiz:
+  remote:
+    user-service:
+      base-url: http://localhost:8081
+    message-service:
+      base-url: http://localhost:8082
+    log-service:
+      base-url: http://localhost:8083
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

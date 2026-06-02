@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: log-service
+platform:
+  log:
+    bounded-context: access-log-and-alerting
+    public-base-path: /api/logs
+server:
+  port: 8083
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

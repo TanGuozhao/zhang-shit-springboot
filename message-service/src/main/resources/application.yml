@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: message-service
+platform:
+  message:
+    bounded-context: message-channel
+    public-base-path: /api/messages
+server:
+  port: 8082
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

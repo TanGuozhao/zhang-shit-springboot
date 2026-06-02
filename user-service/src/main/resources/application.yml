@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: user-service
+platform:
+  user:
+    bounded-context: identity-and-access
+    public-base-path: /api/users
+server:
+  port: 8081
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
