@@ -6,19 +6,25 @@ import com.example.platform.user.dto.PermissionListResponse;
 import com.example.platform.user.dto.RoleListResponse;
 import com.example.platform.user.dto.UserProfileResponse;
 import com.example.platform.user.repository.UserAccountRepository;
+import com.example.platform.user.repository.UserSessionRepository;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserQueryService {
 
     private final UserAccountRepository userAccountRepository;
+    private final UserSessionRepository userSessionRepository;
 
-    public UserQueryService(UserAccountRepository userAccountRepository) {
+    public UserQueryService(UserAccountRepository userAccountRepository,
+                            UserSessionRepository userSessionRepository) {
         this.userAccountRepository = userAccountRepository;
+        this.userSessionRepository = userSessionRepository;
     }
 
-    public UserProfileResponse getCurrentUser(Long userId) {
-        Long resolvedUserId = userId == null ? 1001L : userId;
+    public UserProfileResponse getCurrentUser(Long userId, String sessionKey) {
+        Long resolvedUserId = userSessionRepository.findBySessionKey(sessionKey)
+                .map(session -> session.userId())
+                .orElse(userId == null ? 1001L : userId);
         return getUser(resolvedUserId);
     }
 

@@ -22,8 +22,10 @@ public class UserQueryController {
     }
 
     @GetMapping("/me")
-    public ApiResponse<UserProfileResponse> currentUser(@RequestHeader(value = "X-User-Id", required = false) Long userId) {
-        return ApiResponse.ok(userQueryService.getCurrentUser(userId));
+    public ApiResponse<UserProfileResponse> currentUser(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @RequestHeader(value = "X-Session-Key", required = false) String sessionKey) {
+        return ApiResponse.ok(userQueryService.getCurrentUser(userId, sessionKey));
     }
 
     @GetMapping("/{userId}")

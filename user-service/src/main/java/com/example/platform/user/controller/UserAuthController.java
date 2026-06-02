@@ -7,6 +7,7 @@ import com.example.platform.user.service.UserAuthService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,7 +27,8 @@ public class UserAuthController {
     }
 
     @PostMapping("/logout")
-    public ApiResponse<Void> logout() {
+    public ApiResponse<Void> logout(@RequestHeader(value = "X-Session-Key", required = false) String sessionKey) {
+        userAuthService.logout(sessionKey);
         return ApiResponse.ok("logout success");
     }
 }
