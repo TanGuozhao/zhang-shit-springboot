@@ -5,6 +5,7 @@ import java.time.Instant;
 public record UserSession(
         String sessionKey,
         Long userId,
-        Instant issuedAt
+        Instant issuedAt,
+        Instant expiresAt
 ) {
 }

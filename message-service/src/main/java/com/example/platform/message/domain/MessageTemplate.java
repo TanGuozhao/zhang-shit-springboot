@@ -6,8 +6,10 @@ public record MessageTemplate(
         String templateCode,
         String templateName,
         String channel,
-        String content,
+        String subjectTemplate,
+        String contentTemplate,
+        String description,
         boolean enabled,
-        List<String> variables
+        List<String> variableCodes
 ) {
 }

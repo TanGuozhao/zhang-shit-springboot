@@ -1,5 +1,6 @@
 package com.example.platform.user.dto;
 
+import java.time.Instant;
 import java.util.List;
 
 public record AuthLoginResponse(
@@ -8,6 +9,7 @@ public record AuthLoginResponse(
         String userName,
         List<String> roles,
         List<String> permissions,
-        String sessionKey
+        String sessionKey,
+        Instant expireTime
 ) {
 }

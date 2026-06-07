@@ -1,0 +1,46 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      username: ${SPRING_DATA_REDIS_USERNAME:}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      database: ${SPRING_DATA_REDIS_DATABASE:0}
+      timeout: ${SPRING_DATA_REDIS_TIMEOUT:3s}
+      ssl:
+        enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
+  session:
+    store-type: redis
+    timeout: ${TOPBIZ_SESSION_TIMEOUT:2h}
+    redis:
+      namespace: ${TOPBIZ_SESSION_REDIS_NAMESPACE:topbiz:session}
+      flush-mode: on-save
+      save-mode: on-set-attribute
+      configure-action: none
+    servlet:
+      filter-order: -2147483648
+
+server:
+  servlet:
+    session:
+      cookie:
+        name: ${TOPBIZ_SESSION_COOKIE_NAME:TOPBIZSESSION}
+        http-only: true
+        secure: ${TOPBIZ_SESSION_COOKIE_SECURE:true}
+        same-site: ${TOPBIZ_SESSION_COOKIE_SAME_SITE:lax}
+
+topbiz:
+  orchestration:
+    repository-type: jdbc
+    jdbc:
+      url: ${TOPBIZ_ORCH_JDBC_URL}
+      username: ${TOPBIZ_ORCH_JDBC_USERNAME}
+      password: ${TOPBIZ_ORCH_JDBC_PASSWORD}
+      driver-class-name: ${TOPBIZ_ORCH_JDBC_DRIVER:com.mysql.cj.jdbc.Driver}
+      table-name: ${TOPBIZ_ORCH_JDBC_TABLE:topbiz_orchestration_execution}
+      initialize-schema: ${TOPBIZ_ORCH_JDBC_INIT_SCHEMA:true}
+      maximum-pool-size: ${TOPBIZ_ORCH_JDBC_POOL_SIZE:12}
+      connection-timeout: ${TOPBIZ_ORCH_JDBC_TIMEOUT:3s}

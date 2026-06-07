@@ -1,5 +1,6 @@
 package com.example.platform.topbiz.remote.dto;
 
+import java.time.Instant;
 import java.util.List;
 
 public record RemoteAuthLoginResponse(
@@ -8,6 +9,7 @@ public record RemoteAuthLoginResponse(
         String userName,
         List<String> roles,
         List<String> permissions,
-        String sessionKey
+        String sessionKey,
+        Instant expireTime
 ) {
 }

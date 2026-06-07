@@ -5,6 +5,50 @@ platform:
   log:
     bounded-context: access-log-and-alerting
     public-base-path: /api/logs
+    storage:
+      clickhouse-enabled: false
+      clickhouse-url: jdbc:clickhouse://localhost:8123/default
+      clickhouse-username: default
+      clickhouse-password:
+      clickhouse-table: access_logs
+      retention-days: 30
+      failed-batch-directory: build/failed-batches
+      max-flush-retries: 3
+    buffer:
+      capacity: 10000
+      batch-size: 500
+      flush-interval-ms: 5000
+    scheduler:
+      enabled: true
+      alert-evaluation-interval-ms: 10000
+      export-interval-ms: 15000
+      cleanup-interval-ms: 3600000
+    notification:
+      console-enabled: true
+      webhook-enabled: false
+      webhook-url:
+    export:
+      directory: build/log-exports
+      default-window-minutes: 60
+      max-rows: 10000
+      file-ttl-hours: 24
+    search:
+      default-window-hours: 24
+      max-window-days: 7
+      max-keyword-length: 100
+      max-page-size: 500
+    ingest:
+      max-future-skew-seconds: 300
+      max-past-days: 30
+      max-message-length: 4000
+      allowed-levels:
+        - INFO
+        - DEBUG
+        - WARN
+        - ERROR
+        - FATAL
+    masking:
+      enabled: true
 server:
   port: 8083
 management:

@@ -5,6 +5,12 @@ platform:
   user:
     bounded-context: identity-and-access
     public-base-path: /api/users
+    session-ttl-hours: 8
+    password-min-length: 8
+    password-history-limit: 3
+    login-failure-freeze-threshold: 5
+    verify-code-ttl-minutes: 5
+    verify-code-cooldown-seconds: 60
 server:
   port: 8081
 management:

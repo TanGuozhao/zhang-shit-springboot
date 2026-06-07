@@ -1,6 +1,5 @@
 package com.example.platform.user.service;
 
-import com.example.platform.common.error.BusinessException;
 import com.example.platform.user.domain.UserAccount;
 import com.example.platform.user.dto.PermissionListResponse;
 import com.example.platform.user.dto.RoleListResponse;
@@ -14,45 +13,43 @@ public class UserQueryService {
 
     private final UserAccountRepository userAccountRepository;
     private final UserSessionRepository userSessionRepository;
+    private final UserAccessSupport userAccessSupport;
+    private final UserViewAssembler userViewAssembler;
 
     public UserQueryService(UserAccountRepository userAccountRepository,
-                            UserSessionRepository userSessionRepository) {
+                            UserSessionRepository userSessionRepository,
+                            UserAccessSupport userAccessSupport,
+                            UserViewAssembler userViewAssembler) {
         this.userAccountRepository = userAccountRepository;
         this.userSessionRepository = userSessionRepository;
+        this.userAccessSupport = userAccessSupport;
+        this.userViewAssembler = userViewAssembler;
     }
 
     public UserProfileResponse getCurrentUser(Long userId, String sessionKey) {
-        Long resolvedUserId = userSessionRepository.findBySessionKey(sessionKey)
-                .map(session -> session.userId())
-                .orElse(userId == null ? 1001L : userId);
-        return getUser(resolvedUserId);
+        return userViewAssembler.toProfile(userAccessSupport.requireCurrentUser(userId, sessionKey));
     }
 
-    public UserProfileResponse getUser(Long userId) {
-        UserAccount user = userAccountRepository.findByUserId(userId)
-                .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "user not found"));
-        return new UserProfileResponse(
-                user.userId(),
-                user.account(),
-                user.userName(),
-                user.email(),
-                user.phone(),
-                user.status(),
-                user.departmentId(),
-                user.roles(),
-                user.permissions()
-        );
+    public UserProfileResponse getUser(Long operatorUserId, String sessionKey, Long userId) {
+        return userViewAssembler.toProfile(requireReadableUser(operatorUserId, sessionKey, userId));
     }
 
-    public PermissionListResponse getPermissions(Long userId) {
-        UserAccount user = userAccountRepository.findByUserId(userId)
-                .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "user not found"));
-        return new PermissionListResponse(userId, user.permissions());
+    public PermissionListResponse getPermissions(Long operatorUserId, String sessionKey, Long userId) {
+        UserAccount user = requireReadableUser(operatorUserId, sessionKey, userId);
+        return userViewAssembler.toPermissionList(user);
     }
 
-    public RoleListResponse getRoles(Long userId) {
-        UserAccount user = userAccountRepository.findByUserId(userId)
-                .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "user not found"));
-        return new RoleListResponse(userId, user.roles());
+    public RoleListResponse getRoles(Long operatorUserId, String sessionKey, Long userId) {
+        UserAccount user = requireReadableUser(operatorUserId, sessionKey, userId);
+        return userViewAssembler.toRoleList(user);
+    }
+
+    private UserAccount requireReadableUser(Long operatorUserId, String sessionKey, Long targetUserId) {
+        UserAccount currentUser = userAccessSupport.requireCurrentUser(operatorUserId, sessionKey);
+        if (currentUser.userId().equals(targetUserId)) {
+            return currentUser;
+        }
+        userAccessSupport.requireScopedUserAccess(operatorUserId, sessionKey, "user:read", targetUserId);
+        return userAccessSupport.requireUser(targetUserId);
     }
 }

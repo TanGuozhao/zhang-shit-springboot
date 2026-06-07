@@ -1,4 +1,11 @@
 package com.example.platform.topbiz.remote.dto;
 
-public record RemoteTemplatePreviewResponse(String templateCode, String renderedContent) {
+import java.util.Map;
+
+public record RemoteTemplatePreviewResponse(
+        String templateCode,
+        String renderedSubject,
+        String renderedContent,
+        Map<String, String> resolvedVariables
+) {
 }

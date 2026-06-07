@@ -12,7 +12,7 @@
 
     <artifactId>message-service</artifactId>
     <name>message-service</name>
-    <description>Message service skeleton</description>
+    <description>Message channel and delivery service</description>
 
     <dependencies>
         <dependency>

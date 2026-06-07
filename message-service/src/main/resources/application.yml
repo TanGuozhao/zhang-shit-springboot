@@ -5,6 +5,9 @@ platform:
   message:
     bounded-context: message-channel
     public-base-path: /api/messages
+    scheduler-enabled: true
+    retry-enabled: true
+    max-retry-attempts: 3
 server:
   port: 8082
 management:

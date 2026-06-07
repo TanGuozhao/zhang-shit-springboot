@@ -3,6 +3,10 @@ package com.example.platform.user.controller;
 import com.example.platform.common.api.ApiResponse;
 import com.example.platform.user.dto.AuthLoginRequest;
 import com.example.platform.user.dto.AuthLoginResponse;
+import com.example.platform.user.dto.UserRegistrationRequest;
+import com.example.platform.user.dto.UserRegistrationResponse;
+import com.example.platform.user.dto.VerifyCodeSendRequest;
+import com.example.platform.user.dto.VerifyCodeSendResponse;
 import com.example.platform.user.service.UserAuthService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +23,16 @@ public class UserAuthController {
 
     public UserAuthController(UserAuthService userAuthService) {
         this.userAuthService = userAuthService;
+    }
+
+    @PostMapping("/verify-codes")
+    public ApiResponse<VerifyCodeSendResponse> sendVerifyCode(@Valid @RequestBody VerifyCodeSendRequest request) {
+        return ApiResponse.ok(userAuthService.sendVerifyCode(request));
+    }
+
+    @PostMapping("/register")
+    public ApiResponse<UserRegistrationResponse> register(@Valid @RequestBody UserRegistrationRequest request) {
+        return ApiResponse.ok(userAuthService.register(request));
     }
 
     @PostMapping("/login")

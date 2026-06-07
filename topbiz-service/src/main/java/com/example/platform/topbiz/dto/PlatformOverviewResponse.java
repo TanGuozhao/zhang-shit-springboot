@@ -1,12 +1,16 @@
 package com.example.platform.topbiz.dto;
 
+import com.example.platform.user.dto.DepartmentResponse;
+import com.example.platform.user.dto.UserProfileResponse;
+
 import java.util.Map;
 
 public record PlatformOverviewResponse(
-        Long currentUserId,
-        String currentUserName,
-        Map<String, Object> user,
-        Map<String, Object> message,
-        Map<String, Object> log
+        LoginResponse session,
+        UserProfileResponse currentUser,
+        DepartmentResponse currentDepartment,
+        PlatformArchitectureResponse architecture,
+        PlatformRuntimeResponse runtime,
+        Map<String, Object> quickView
 ) {
 }

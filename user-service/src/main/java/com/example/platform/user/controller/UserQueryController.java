@@ -29,17 +29,26 @@ public class UserQueryController {
     }
 
     @GetMapping("/{userId}")
-    public ApiResponse<UserProfileResponse> getUser(@PathVariable Long userId) {
-        return ApiResponse.ok(userQueryService.getUser(userId));
+    public ApiResponse<UserProfileResponse> getUser(
+            @RequestHeader(value = "X-User-Id", required = false) Long operatorUserId,
+            @RequestHeader(value = "X-Session-Key", required = false) String sessionKey,
+            @PathVariable Long userId) {
+        return ApiResponse.ok(userQueryService.getUser(operatorUserId, sessionKey, userId));
     }
 
     @GetMapping("/{userId}/permissions")
-    public ApiResponse<PermissionListResponse> getPermissions(@PathVariable Long userId) {
-        return ApiResponse.ok(userQueryService.getPermissions(userId));
+    public ApiResponse<PermissionListResponse> getPermissions(
+            @RequestHeader(value = "X-User-Id", required = false) Long operatorUserId,
+            @RequestHeader(value = "X-Session-Key", required = false) String sessionKey,
+            @PathVariable Long userId) {
+        return ApiResponse.ok(userQueryService.getPermissions(operatorUserId, sessionKey, userId));
     }
 
     @GetMapping("/{userId}/roles")
-    public ApiResponse<RoleListResponse> getRoles(@PathVariable Long userId) {
-        return ApiResponse.ok(userQueryService.getRoles(userId));
+    public ApiResponse<RoleListResponse> getRoles(
+            @RequestHeader(value = "X-User-Id", required = false) Long operatorUserId,
+            @RequestHeader(value = "X-Session-Key", required = false) String sessionKey,
+            @PathVariable Long userId) {
+        return ApiResponse.ok(userQueryService.getRoles(operatorUserId, sessionKey, userId));
     }
 }

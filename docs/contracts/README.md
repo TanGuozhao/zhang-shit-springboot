@@ -2,6 +2,7 @@
 
 These files freeze the first stable service boundary between `topbiz` and the three underlying services:
 
+- `topbiz-service-contract.md`
 - `user-service-contract.md`
 - `message-service-contract.md`
 - `log-service-contract.md`

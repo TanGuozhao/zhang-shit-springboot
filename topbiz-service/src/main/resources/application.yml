@@ -1,20 +1,31 @@
 spring:
   application:
     name: topbiz-service
-  data:
-    redis:
-      host: localhost
-      port: 6379
   session:
-    store-type: redis
+    store-type: none
+    timeout: 2h
 server:
   port: 8080
+  servlet:
+    session:
+      cookie:
+        name: TOPBIZSESSION
+        http-only: true
+        same-site: lax
 shiro:
   loginUrl: /api/topbiz/auth/login
   successUrl: /api/topbiz/platform/overview
   unauthorizedUrl: /error/403
   userNativeSessionManager: false
 topbiz:
+  orchestration:
+    repository-type: memory
+    jdbc:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      table-name: topbiz_orchestration_execution
+      initialize-schema: true
+      maximum-pool-size: 8
+      connection-timeout: 3s
   remote:
     user-service:
       base-url: http://localhost:8081
