@@ -19,7 +19,7 @@
 - 外部系统访问底层微服务，原则上都应通过 `topbiz-service`
 - 服务间调用统一使用 `OpenFeign`
 - `topbiz-service` 的认证授权使用 `Shiro`
-- 当前接口契约已经冻结，禁止私自改接口路径、字段名、响应结构
+- 当前接口契约已经冻结，禁止私自修改接口路径、字段名、响应结构
 
 ## 3. 契约文件
 
@@ -32,7 +32,7 @@
 
 如果实现中发现契约缺字段：
 
-1. 不要直接改 controller 接口
+1. 不要直接修改 controller 接口
 2. 先提出变更点
 3. 由负责人统一决定是否升级契约
 
@@ -73,7 +73,7 @@
 禁止：
 
 - 依赖其他业务服务做数据补全
-- 在本服务内做平台级聚合展示
+- 在本服务内部做平台级聚合展示
 
 ### `topbiz-service`
 
@@ -88,11 +88,11 @@
 - 落业务主数据
 - 把底层业务规则复制到 `topbiz`
 
-## 5. AI 修改代码时必须遵守
+## 5. AI 改代码时必须遵守
 
 - 优先补实现，不要重命名现有包结构
 - 不要随意修改 DTO 字段名
-- 不要改已有 URL 路径
+- 不要改已存在 URL 路径
 - 不要把返回结构从 `ApiResponse<T>` 改成别的格式
 - 不要删除现有测试
 - 不要把一个服务的 domain 复制到另一个服务
@@ -105,10 +105,10 @@
 - Spring Cloud：`2025.0.0`
 - 返回统一使用 `ApiResponse`
 - 公共异常优先复用 `service-common`
-- controller 只做入参和出参
+- controller 只做入参与出参
 - 业务逻辑放 `service`
 - 领域对象放 `domain`
-- 请求/响应模型放 `dto`
+- 请求 / 响应模型放 `dto`
 
 ## 7. Shiro 与权限约束
 
@@ -116,7 +116,7 @@
 
 约束如下：
 
-- 权限字符串使用冒号风格，如 `user:read`、`message:send`、`log:query`、`topbiz:admin`
+- 权限字符串使用冒号风格，例如 `user:read`、`message:send`、`log:query`、`topbiz:admin`
 - 新增权限时，先遵守“资源:动作”格式
 - 不要把权限判断写死在前端
 - `topbiz` controller 上优先使用 `@RequiresPermissions`
@@ -124,11 +124,10 @@
 ## 8. Redis Session 说明
 
 仓库里已经保留了 `Redis Session` 依赖和配置入口。
-
 当前状态：
 
 - 项目骨架可运行
-- 后续如果要把会话完全落到 Redis，需要在现有基础上继续补会话桥接实现
+- 如果后续要把会话完全落到 Redis，需要在现有基础上继续补会话桥接实现
 
 因此：
 
@@ -164,20 +163,17 @@
 队友如果要让 AI 继续写代码，建议直接带上这段：
 
 ```text
-你正在维护一个 Spring Boot 多模块项目，包含 user-service、message-service、log-service、topbiz-service。
-请严格遵守 docs/contracts 下的接口契约，不要修改接口路径、字段名和统一响应结构 ApiResponse。
-topbiz 只做编排，不落业务主数据；底层服务之间禁止互调；服务间调用统一使用 OpenFeign。
-只在我指定的模块内修改代码，优先补 service、repository、domain 实现，并保证 mvnw test 可通过。
+你正在维护一个 Spring Boot 多模块项目，包含 user-service、message-service、log-service、topbiz-service。请严格遵守 docs/contracts 下的接口契约，不要修改接口路径、字段名和统一响应结构 ApiResponse。topbiz 只做编排，不落业务主数据；底层服务之间禁止互调；服务间调用统一使用 OpenFeign。只在我指定的模块内修改代码，优先补 service、repository、domain 实现，并保证 mvnw test 可通过。
 ```
 
 ## 11. 负责人保留项
 
-下面这些内容不要由队友各自 AI 随意推进：
+下面这些内容不要由队友各自的 AI 随意推进：
 
 - 契约升级
 - `topbiz-service` 新增对外平台接口
 - 分布式事务最终选型
 - Shiro 权限体系总规范
-- 统一日志/trace 规范
+- 统一日志 / trace 规范
 
 这些应由项目负责人统一收口。

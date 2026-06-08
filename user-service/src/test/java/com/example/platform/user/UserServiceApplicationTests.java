@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(classes = UserServiceApplication.class)
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class UserServiceApplicationTests {
@@ -158,6 +158,110 @@ class UserServiceApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.userName").value("New User"))
                 .andExpect(jsonPath("$.data.expireTime").isNotEmpty());
+    }
+
+    @Test
+    void emailLoginShouldAutoRegisterAndReturnSession() throws Exception {
+        mockMvc.perform(post("/api/users/auth/email/send-code")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "Email.Login@example.com"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.email").value("email.login@example.com"))
+                .andExpect(jsonPath("$.data.expireTime").isNotEmpty());
+
+        MvcResult loginResult = mockMvc.perform(post("/api/users/auth/email/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "email.login@example.com",
+                                  "verifyCode": "123456",
+                                  "autoRegister": true,
+                                  "userName": "Email Login User"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.account").value("email.login@example.com"))
+                .andExpect(jsonPath("$.data.userName").value("Email Login User"))
+                .andExpect(jsonPath("$.data.sessionKey").isNotEmpty())
+                .andReturn();
+
+        String sessionKey = JsonPath.read(loginResult.getResponse().getContentAsString(), "$.data.sessionKey");
+        mockMvc.perform(get("/api/users/me")
+                        .header("X-Session-Key", sessionKey))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.account").value("email.login@example.com"))
+                .andExpect(jsonPath("$.data.userName").value("Email Login User"));
+    }
+
+    @Test
+    void thirdPartyLoginShouldAutoProvisionAndReuseBinding() throws Exception {
+        MvcResult firstLoginResult = mockMvc.perform(post("/api/users/auth/third-party/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "provider": "QQ",
+                                  "providerUserId": "qq_user_001",
+                                  "providerUnionId": "qq_union_001",
+                                  "account": "qq.demo@example.com",
+                                  "email": "qq.demo@example.com",
+                                  "userName": "QQ Demo User",
+                                  "avatar": "https://cdn.example.com/avatar/qq-demo.png",
+                                  "autoRegister": true,
+                                  "rawProfile": {
+                                    "nickname": "qq-demo"
+                                  }
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.account").value("qq.demo@example.com"))
+                .andExpect(jsonPath("$.data.userName").value("QQ Demo User"))
+                .andReturn();
+
+        Long firstUserId = extractLong(firstLoginResult.getResponse().getContentAsString(), "$.data.userId");
+
+        mockMvc.perform(post("/api/users/auth/third-party/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "provider": "QQ",
+                                  "providerUserId": "qq_user_001",
+                                  "providerUnionId": "qq_union_001",
+                                  "userName": "QQ Demo User Updated",
+                                  "autoRegister": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(firstUserId))
+                .andExpect(jsonPath("$.data.account").value("qq.demo@example.com"));
+    }
+
+    @Test
+    void legacyThirdPartyLoginTypeShouldStillWork() throws Exception {
+        mockMvc.perform(post("/api/users/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "account": "legacy.qq@example.com",
+                                  "loginType": "third_party",
+                                  "thirdPartyInfo": {
+                                    "provider": "QQ",
+                                    "subject": "legacy_qq_subject",
+                                    "unionId": "legacy_union_001",
+                                    "email": "legacy.qq@example.com",
+                                    "nickname": "Legacy QQ User",
+                                    "avatarUrl": "https://cdn.example.com/avatar/legacy-qq.png",
+                                    "autoRegister": "true"
+                                  }
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.account").value("legacy.qq@example.com"))
+                .andExpect(jsonPath("$.data.userName").value("Legacy QQ User"))
+                .andExpect(jsonPath("$.data.sessionKey").isNotEmpty());
     }
 
     @Test

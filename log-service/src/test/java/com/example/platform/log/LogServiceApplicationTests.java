@@ -93,6 +93,7 @@ class LogServiceApplicationTests {
         List<LogIngestRequest> requests = List.of(
                 new LogIngestRequest("topbiz", "TRACE-M-1", "INFO", "metrics info", "/metrics", 200, 30L, null, null, null, Map.of()),
                 new LogIngestRequest("topbiz", "TRACE-M-2", "ERROR", "metrics error", "/metrics", 500, 130L, null, null, null, Map.of()),
+                new LogIngestRequest("topbiz", "TRACE-M-4", "WARN", "metrics warn", "/metrics", 404, 3200L, null, "10.0.0.8", null, Map.of()),
                 new LogIngestRequest("message-service", "TRACE-M-3", "INFO", "other service", "/messages", 200, 50L, null, null, null, Map.of())
         );
         for (LogIngestRequest request : requests) {
@@ -119,12 +120,23 @@ class LogServiceApplicationTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(searchRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.total").value(2));
+                .andExpect(jsonPath("$.data.total").value(3));
 
         String metricsResponse = mockMvc.perform(get("/api/logs/metrics").param("serviceName", "topbiz"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.metrics.totalRequests").value(2))
-                .andExpect(jsonPath("$.data.metrics.errorRate").value(50.0))
+                .andExpect(jsonPath("$.data.metrics.totalRequests").value(3))
+                .andExpect(jsonPath("$.data.metrics.tps").value(1.0))
+                .andExpect(jsonPath("$.data.metrics.successRate").value(33.33))
+                .andExpect(jsonPath("$.data.metrics.errorRate").value(33.33))
+                .andExpect(jsonPath("$.data.metrics.http4xxCount").value(1))
+                .andExpect(jsonPath("$.data.metrics.http5xxCount").value(1))
+                .andExpect(jsonPath("$.data.metrics.timeoutCount").value(1))
+                .andExpect(jsonPath("$.data.metrics.errorLogCount").value(1))
+                .andExpect(jsonPath("$.data.metrics.bizThroughput").value(3))
+                .andExpect(jsonPath("$.data.metrics.uniqueTraceCount").value(3))
+                .andExpect(jsonPath("$.data.metrics.uniqueClientIpCount").value(1))
+                .andExpect(jsonPath("$.data.metrics.maxLatency").value(3200))
+                .andExpect(jsonPath("$.data.metrics.minLatency").value(30))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();

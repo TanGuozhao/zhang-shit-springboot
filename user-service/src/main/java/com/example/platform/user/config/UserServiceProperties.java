@@ -11,6 +11,8 @@ public record UserServiceProperties(
         Integer passwordHistoryLimit,
         Integer loginFailureFreezeThreshold,
         Integer verifyCodeTtlMinutes,
-        Integer verifyCodeCooldownSeconds
+        Integer verifyCodeCooldownSeconds,
+        Boolean emailLoginAutoRegister,
+        Boolean thirdPartyAutoRegister
 ) {
 }

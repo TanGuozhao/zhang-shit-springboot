@@ -26,6 +26,9 @@ import com.example.platform.user.dto.DepartmentMemberRelationRequest;
 import com.example.platform.user.dto.DepartmentResponse;
 import com.example.platform.user.dto.DepartmentTransferRequest;
 import com.example.platform.user.dto.DepartmentUserSummaryResponse;
+import com.example.platform.user.dto.EmailCodeLoginRequest;
+import com.example.platform.user.dto.EmailLoginSendCodeRequest;
+import com.example.platform.user.dto.EmailLoginSendCodeResponse;
 import com.example.platform.user.dto.ForgotPasswordResetRequest;
 import com.example.platform.user.dto.ForgotPasswordSendCodeRequest;
 import com.example.platform.user.dto.ForgotPasswordSendCodeResponse;
@@ -35,6 +38,7 @@ import com.example.platform.user.dto.PasswordChangeRequest;
 import com.example.platform.user.dto.PermissionListResponse;
 import com.example.platform.user.dto.RoleListResponse;
 import com.example.platform.user.dto.RolePermissionDefinitionResponse;
+import com.example.platform.user.dto.ThirdPartyLoginRequest;
 import com.example.platform.user.dto.UserAuthorizationUpdateRequest;
 import com.example.platform.user.dto.UserCancelRequest;
 import com.example.platform.user.dto.UserCreateRequest;
@@ -78,6 +82,15 @@ public interface UserServiceClient {
 
     @PostMapping("/api/users/auth/register")
     ApiResponse<UserRegistrationResponse> register(@RequestBody UserRegistrationRequest request);
+
+    @PostMapping("/api/users/auth/email/send-code")
+    ApiResponse<EmailLoginSendCodeResponse> sendEmailLoginCode(@RequestBody EmailLoginSendCodeRequest request);
+
+    @PostMapping("/api/users/auth/email/login")
+    ApiResponse<RemoteAuthLoginResponse> loginByEmailCode(@RequestBody EmailCodeLoginRequest request);
+
+    @PostMapping("/api/users/auth/third-party/login")
+    ApiResponse<RemoteAuthLoginResponse> loginByThirdParty(@RequestBody ThirdPartyLoginRequest request);
 
     @GetMapping("/api/users/me")
     ApiResponse<UserProfileResponse> me();

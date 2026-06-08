@@ -19,17 +19,21 @@ public class UserVerificationCodeService {
     public static final String SCENE_REGISTER = "REGISTER";
     public static final String SCENE_FORGOT_PASSWORD = "FORGOT_PASSWORD";
     public static final String SCENE_UNFREEZE = "UNFREEZE";
+    public static final String SCENE_EMAIL_LOGIN = "EMAIL_LOGIN";
 
     private final VerificationCodeRepository verificationCodeRepository;
     private final UserAccountRepository userAccountRepository;
     private final UserServiceProperties userServiceProperties;
+    private final UserVerificationCodeSender userVerificationCodeSender;
 
     public UserVerificationCodeService(VerificationCodeRepository verificationCodeRepository,
                                        UserAccountRepository userAccountRepository,
-                                       UserServiceProperties userServiceProperties) {
+                                       UserServiceProperties userServiceProperties,
+                                       UserVerificationCodeSender userVerificationCodeSender) {
         this.verificationCodeRepository = verificationCodeRepository;
         this.userAccountRepository = userAccountRepository;
         this.userServiceProperties = userServiceProperties;
+        this.userVerificationCodeSender = userVerificationCodeSender;
     }
 
     public VerificationCode send(String account, String contact, String scene) {
@@ -37,12 +41,14 @@ public class UserVerificationCodeService {
         validateScene(normalizedScene);
         validateSendAllowed(account, contact, normalizedScene);
         enforceCooldown(account, normalizedScene);
-        return verificationCodeRepository.save(
+        VerificationCode verificationCode = verificationCodeRepository.save(
                 account,
                 contact,
                 normalizedScene,
                 Duration.ofMinutes(userServiceProperties.verifyCodeTtlMinutes())
         );
+        userVerificationCodeSender.send(verificationCode);
+        return verificationCode;
     }
 
     public void verifyOrThrow(String account, String contact, String scene, String code) {
@@ -63,8 +69,9 @@ public class UserVerificationCodeService {
     private void validateScene(String scene) {
         if (!SCENE_REGISTER.equals(scene)
                 && !SCENE_FORGOT_PASSWORD.equals(scene)
-                && !SCENE_UNFREEZE.equals(scene)) {
-            throw new BusinessException("INVALID_VERIFY_SCENE", "scene must be REGISTER, FORGOT_PASSWORD or UNFREEZE");
+                && !SCENE_UNFREEZE.equals(scene)
+                && !SCENE_EMAIL_LOGIN.equals(scene)) {
+            throw new BusinessException("INVALID_VERIFY_SCENE", "scene must be REGISTER, FORGOT_PASSWORD, UNFREEZE or EMAIL_LOGIN");
         }
     }
 
@@ -73,6 +80,9 @@ public class UserVerificationCodeService {
             if (userAccountRepository.findByAccount(account).isPresent()) {
                 throw new BusinessException("ACCOUNT_ALREADY_EXISTS", "account already exists");
             }
+            return;
+        }
+        if (SCENE_EMAIL_LOGIN.equals(scene)) {
             return;
         }
 

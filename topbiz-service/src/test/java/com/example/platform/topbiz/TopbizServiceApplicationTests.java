@@ -10,6 +10,7 @@ import com.example.platform.topbiz.remote.UserServiceClient;
 import com.example.platform.topbiz.remote.dto.RemoteArchitectureOverviewResponse;
 import com.example.platform.topbiz.remote.dto.RemoteAuthLoginRequest;
 import com.example.platform.topbiz.remote.dto.RemoteAuthLoginResponse;
+import com.example.platform.user.dto.EmailLoginSendCodeResponse;
 import com.example.platform.user.dto.DepartmentResponse;
 import com.example.platform.user.dto.PermissionListResponse;
 import com.example.platform.user.dto.RoleListResponse;
@@ -35,6 +36,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -44,7 +46,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = {
+@SpringBootTest(classes = TopbizServiceApplication.class, properties = {
         "spring.session.store-type=none",
         "spring.data.redis.repositories.enabled=false",
         "spring.autoconfigure.exclude="
@@ -159,6 +161,109 @@ class TopbizServiceApplicationTests {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void emailSendCodeShouldDelegateToUserService() throws Exception {
+        when(userServiceClient.sendEmailLoginCode(any())).thenReturn(ApiResponse.ok(
+                new EmailLoginSendCodeResponse("email.login@example.com", FIXED_TIME.plusSeconds(300))
+        ));
+
+        mockMvc.perform(post("/api/topbiz/auth/email/send-code")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "email.login@example.com"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.email").value("email.login@example.com"))
+                .andExpect(jsonPath("$.data.expireTime").isNotEmpty());
+    }
+
+    @Test
+    void emailLoginShouldCreatePlatformSession() throws Exception {
+        when(userServiceClient.loginByEmailCode(any())).thenReturn(ApiResponse.ok(
+                new RemoteAuthLoginResponse(
+                        3001L,
+                        "email.login@example.com",
+                        "Email Login User",
+                        List.of("USER"),
+                        List.of("user:self:read"),
+                        "sess-email-001",
+                        FIXED_TIME.plusSeconds(1800)
+                )
+        ));
+
+        MvcResult loginResult = mockMvc.perform(post("/api/topbiz/auth/email/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "email.login@example.com",
+                                  "verifyCode": "123456",
+                                  "autoRegister": true,
+                                  "userName": "Email Login User"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(3001))
+                .andExpect(jsonPath("$.data.sessionId").isNotEmpty())
+                .andExpect(jsonPath("$.data.sessionKey").value("sess-email-001"))
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+        mockMvc.perform(get("/api/topbiz/auth/session").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(3001))
+                .andExpect(jsonPath("$.data.account").value("email.login@example.com"));
+    }
+
+    @Test
+    void oauthAuthorizeShouldReturnAuthorizationUrlAndState() throws Exception {
+        mockMvc.perform(get("/api/topbiz/auth/oauth/qq/authorize"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.provider").value("QQ"))
+                .andExpect(jsonPath("$.data.state").isNotEmpty())
+                .andExpect(jsonPath("$.data.redirectUri").value("http://localhost:8080/api/topbiz/auth/oauth/qq/callback"))
+                .andExpect(jsonPath("$.data.authorizationUrl", containsString("client_id=qq-demo-client-id")))
+                .andExpect(jsonPath("$.data.authorizationUrl", containsString("response_type=code")));
+    }
+
+    @Test
+    void oauthCallbackShouldCompletePlatformSession() throws Exception {
+        when(userServiceClient.loginByThirdParty(any())).thenReturn(ApiResponse.ok(
+                new RemoteAuthLoginResponse(
+                        4001L,
+                        "qq.callback@example.com",
+                        "QQ Callback User",
+                        List.of("USER"),
+                        List.of("user:self:read"),
+                        "sess-oauth-001",
+                        FIXED_TIME.plusSeconds(1800)
+                )
+        ));
+
+        MvcResult authorizeResult = mockMvc.perform(get("/api/topbiz/auth/oauth/qq/authorize"))
+                .andExpect(status().isOk())
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) authorizeResult.getRequest().getSession(false);
+        String state = JsonPath.read(authorizeResult.getResponse().getContentAsString(), "$.data.state");
+
+        MvcResult callbackResult = mockMvc.perform(get("/api/topbiz/auth/oauth/qq/callback")
+                        .session(session)
+                        .param("code", "demo-code-001")
+                        .param("state", state))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(4001))
+                .andExpect(jsonPath("$.data.account").value("qq.callback@example.com"))
+                .andExpect(jsonPath("$.data.sessionKey").value("sess-oauth-001"))
+                .andReturn();
+
+        MockHttpSession callbackSession = (MockHttpSession) callbackResult.getRequest().getSession(false);
+        mockMvc.perform(get("/api/topbiz/auth/session").session(callbackSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(4001))
+                .andExpect(jsonPath("$.data.account").value("qq.callback@example.com"));
     }
 
     @Test

@@ -11,6 +11,8 @@ platform:
     login-failure-freeze-threshold: 5
     verify-code-ttl-minutes: 5
     verify-code-cooldown-seconds: 60
+    email-login-auto-register: true
+    third-party-auto-register: true
 server:
   port: 8081
 management:

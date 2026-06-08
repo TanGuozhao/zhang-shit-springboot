@@ -3,6 +3,7 @@ package com.example.platform.topbiz.security;
 import com.example.platform.topbiz.remote.UserServiceClient;
 import com.example.platform.topbiz.remote.dto.RemoteAuthLoginRequest;
 import com.example.platform.topbiz.remote.dto.RemoteAuthLoginResponse;
+import com.example.platform.topbiz.service.RemoteCallSupport;
 import com.example.platform.user.dto.PermissionListResponse;
 import com.example.platform.user.dto.RoleListResponse;
 import org.apache.shiro.authc.AuthenticationException;
@@ -22,9 +23,12 @@ public class TopbizAuthorizingRealm extends AuthorizingRealm {
     public static final String REALM_NAME = "topbizRealm";
 
     private final UserServiceClient userServiceClient;
+    private final RemoteCallSupport remoteCallSupport;
 
-    public TopbizAuthorizingRealm(UserServiceClient userServiceClient) {
+    public TopbizAuthorizingRealm(UserServiceClient userServiceClient,
+                                  RemoteCallSupport remoteCallSupport) {
         this.userServiceClient = userServiceClient;
+        this.remoteCallSupport = remoteCallSupport;
         setAuthenticationTokenClass(UsernamePasswordToken.class);
         setName(REALM_NAME);
     }
@@ -32,8 +36,8 @@ public class TopbizAuthorizingRealm extends AuthorizingRealm {
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
         TopbizPrincipal principal = (TopbizPrincipal) principals.getPrimaryPrincipal();
-        RoleListResponse roles = userServiceClient.getRoles(principal.userId()).data();
-        PermissionListResponse permissions = userServiceClient.getPermissions(principal.userId()).data();
+        RoleListResponse roles = remoteCallSupport.unwrap(userServiceClient.getRoles(principal.userId()));
+        PermissionListResponse permissions = remoteCallSupport.unwrap(userServiceClient.getPermissions(principal.userId()));
         SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
         info.addRoles(roles.roles());
         info.addStringPermissions(permissions.permissions());
@@ -43,7 +47,7 @@ public class TopbizAuthorizingRealm extends AuthorizingRealm {
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) throws AuthenticationException {
         UsernamePasswordToken usernamePasswordToken = (UsernamePasswordToken) token;
-        RemoteAuthLoginResponse loginResponse = userServiceClient.login(
+        RemoteAuthLoginResponse loginResponse = remoteCallSupport.unwrap(userServiceClient.login(
                 new RemoteAuthLoginRequest(
                         usernamePasswordToken.getUsername(),
                         new String(usernamePasswordToken.getPassword()),
@@ -51,7 +55,7 @@ public class TopbizAuthorizingRealm extends AuthorizingRealm {
                         Boolean.FALSE,
                         null
                 )
-        ).data();
+        ));
         TopbizPrincipal principal = new TopbizPrincipal(
                 loginResponse.userId(),
                 loginResponse.account(),

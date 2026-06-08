@@ -1,20 +1,20 @@
-# Message Service Contract
+# 消息服务契约
 
-## Purpose
+## 目的
 
-`message-service` owns message template, variable, dispatch, channel, retry, and inbox capabilities.
+`message-service` 持有消息模板、变量、投递、渠道、重试与收件箱能力。
 
-## Public base path
+## 对外基础路径
 
 `/api/messages`
 
-## Frozen initial endpoints
+## 第一版冻结接口
 
-### 1. Query architecture overview
+### 1. 查询架构概览
 
-- Method: `GET`
-- Path: `/internal/architecture/overview`
-- Response:
+- 方法：`GET`
+- 路径：`/internal/architecture/overview`
+- 响应：
 
 ```json
 {
@@ -31,7 +31,7 @@
 }
 ```
 
-## Reserved business contracts for topbiz
+## 为 Topbiz 预留的业务契约
 
 - `POST /api/messages/send`
 - `POST /api/messages/drafts`
@@ -41,8 +41,8 @@
 - `GET /api/messages/templates/{templateId}`
 - `POST /api/messages/templates/{templateId}/preview`
 
-## Contract rules
+## 契约规则
 
-- All responses use `ApiResponse`
-- Service owns message-related master data
-- Retry, scheduling, and inbox semantics are internal to this service
+- 所有响应统一使用 `ApiResponse`
+- 服务自身持有消息领域主数据
+- 重试、调度、收件箱语义由本服务内部维护

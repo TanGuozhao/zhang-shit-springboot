@@ -1,53 +1,78 @@
-# Topbiz Service Contract
+# Topbiz 服务契约
 
-## Purpose
+## 目的
 
-`topbiz-service` is the external gateway and orchestration layer for the platform.
-It does not own user, message, or log master data.
-It authenticates users, enforces permissions, proxies allowed capabilities, and coordinates cross-service workflows.
+`topbiz-service` 是整个平台的对外网关与编排层。
+它不持有用户、消息、日志主数据。
+它负责用户认证、权限校验、能力代理以及跨服务流程编排。
 
-## Corrected Design Decisions
+## 已修正的设计决策
 
-- `topbiz-service` is the only public entry for cross-service orchestration.
-- Bottom services are not allowed to call each other directly through business APIs.
-- `topbiz-service` currently uses `Shiro + servlet session bridge` for runtime login state.
-  Production deployment uses `Redis Session` through the `prod` profile, while local development keeps the servlet-session bridge.
-- Service-to-service calls use `OpenFeign`.
-- Orchestration execution records are persisted through a repository abstraction.
-  Local development defaults to in-memory storage, and production uses a durable JDBC repository.
+- `topbiz-service` 是跨服务编排的唯一公开入口。
+- 底层服务之间不允许直接通过业务 API 相互调用。
+- `topbiz-service` 当前使用 `Shiro + Servlet Session 桥接` 维护运行时登录态。
+  生产环境通过 `prod` profile 启用 `Redis Session`，本地开发仍保留 Servlet Session 桥接方式。
+- 服务间调用统一使用 `OpenFeign`。
+- `topbiz-service` 对外持有平台外层 Session，底层认证仍然以 `user-service` 返回的 `sessionKey` 为准。
+- 第三方登录当前采用 `OAuth authorize/callback + user-service 绑定登录` 模型。
+- 当前 provider 入口支持 `QQ`、`WECHAT`，但真实开放平台换码仍是可替换实现。
+- 编排执行记录通过仓储抽象持久化。
+  本地开发默认使用内存存储，生产模式使用可持久化的 JDBC 仓储。
 
-## Shared Rules
+## 通用规则
 
-- All responses use `ApiResponse<T>`.
-- Public base path is `/api/topbiz`.
-- `topbiz-service` authenticates through `user-service /api/users/auth/login`.
-- After login, `topbiz-service` stores `TopbizPrincipal` in session and forwards:
+- 所有响应统一使用 `ApiResponse<T>`。
+- 对外公开基础路径为 `/api/topbiz`。
+- `topbiz-service` 通过 `user-service` 的下列认证接口完成底层认证：
+  - `POST /api/users/auth/login`
+  - `POST /api/users/auth/email/login`
+  - `POST /api/users/auth/third-party/login`
+- 登录成功后，`topbiz-service` 会把 `TopbizPrincipal` 写入 Session，并向下游透传：
   - `X-User-Id`
   - `X-Session-Key`
-- Trace headers are forwarded when present:
+- `topbiz-service` 对客户端返回：
+  - `sessionId`：平台外层 Session 标识
+  - `sessionKey`：底层 `user-service` 会话键
+- 如请求中存在链路追踪头，也会继续透传：
   - `X-Trace-Id`
   - `X-Request-Id`
-- Anonymous paths:
+- 匿名可访问路径：
   - `POST /api/topbiz/auth/login`
+  - `POST /api/topbiz/auth/email/send-code`
+  - `POST /api/topbiz/auth/email/login`
+  - `GET /api/topbiz/auth/oauth/*/authorize`
+  - `GET /api/topbiz/auth/oauth/*/callback`
   - `POST /api/topbiz/users/auth/verify-codes`
   - `POST /api/topbiz/users/auth/register`
   - `POST /api/topbiz/users/password/forgot/send-code`
   - `POST /api/topbiz/users/password/forgot/reset`
   - `POST /api/topbiz/users/me/status/unfreeze`
 
-## Auth APIs
+## 认证接口
 
 - `POST /api/topbiz/auth/login`
+- `POST /api/topbiz/auth/email/send-code`
+- `POST /api/topbiz/auth/email/login`
+- `GET /api/topbiz/auth/oauth/{provider}/authorize`
+- `GET /api/topbiz/auth/oauth/{provider}/callback`
 - `POST /api/topbiz/auth/logout`
 - `GET /api/topbiz/auth/session`
 
-## Platform APIs
+### 认证说明
+
+- 密码登录由 `topbiz-service` 调用 `user-service /api/users/auth/login` 完成。
+- 邮箱验证码登录由 `topbiz-service` 调用 `user-service /api/users/auth/email/send-code` 与 `/api/users/auth/email/login` 完成。
+- 第三方登录对外走 `authorize/callback`，回调后由 `topbiz-service` 调用 `user-service /api/users/auth/third-party/login` 完成绑定或自动注册。
+- OAuth state 由 `topbiz-service` 本地维护并校验。
+- 当前 OAuth 用户资料交换使用 `MockTopbizOAuthProviderClient`，属于可替换实现。
+
+## 平台接口
 
 - `GET /api/topbiz/platform/overview`
 - `GET /api/topbiz/platform/architecture`
 - `GET /api/topbiz/platform/runtime`
 
-## Orchestration APIs
+## 编排接口
 
 - `POST /api/topbiz/orchestrations/user-provisioning`
 - `POST /api/topbiz/orchestrations/department-transfer`
@@ -55,9 +80,9 @@ It authenticates users, enforces permissions, proxies allowed capabilities, and 
 - `GET /api/topbiz/orchestrations`
 - `GET /api/topbiz/orchestrations/{orchestrationId}`
 
-## User Gateway APIs
+## 用户网关接口
 
-### User Self and Query
+### 用户自助与查询
 
 - `POST /api/topbiz/users/auth/verify-codes`
 - `POST /api/topbiz/users/auth/register`
@@ -75,7 +100,7 @@ It authenticates users, enforces permissions, proxies allowed capabilities, and 
 - `GET /api/topbiz/users/{userId}/roles`
 - `GET /api/topbiz/users/departments/{deptId}`
 
-### User Admin
+### 用户管理
 
 - `GET /api/topbiz/users/admin`
 - `POST /api/topbiz/users/admin`
@@ -85,7 +110,7 @@ It authenticates users, enforces permissions, proxies allowed capabilities, and 
 - `POST /api/topbiz/users/admin/{userId}/authorization/permissions:refresh`
 - `POST /api/topbiz/users/admin/{userId}/password:reset`
 
-### Role Admin
+### 角色管理
 
 - `GET /api/topbiz/users/admin/roles`
 - `GET /api/topbiz/users/admin/permissions`
@@ -94,7 +119,7 @@ It authenticates users, enforces permissions, proxies allowed capabilities, and 
 - `PUT /api/topbiz/users/admin/roles/{roleId}/permissions`
 - `DELETE /api/topbiz/users/admin/roles/{roleId}`
 
-### Department Admin
+### 部门管理
 
 - `GET /api/topbiz/users/admin/departments`
 - `GET /api/topbiz/users/admin/departments/tree`
@@ -113,9 +138,9 @@ It authenticates users, enforces permissions, proxies allowed capabilities, and 
 - `PUT /api/topbiz/users/admin/departments/{departmentId}/members/{userId}/attributes`
 - `POST /api/topbiz/users/admin/departments/{departmentId}/members/attributes:batch`
 
-## Message Gateway APIs
+## 消息网关接口
 
-### Message Use APIs
+### 消息使用接口
 
 - `POST /api/topbiz/messages/send`
 - `POST /api/topbiz/messages/drafts`
@@ -137,7 +162,7 @@ It authenticates users, enforces permissions, proxies allowed capabilities, and 
 - `GET /api/topbiz/messages/inbox`
 - `GET /api/topbiz/messages/inbox/{inboxId}`
 
-### Message Admin and Runtime
+### 消息管理与运行时接口
 
 - `POST /api/topbiz/messages/admin/templates`
 - `PUT /api/topbiz/messages/admin/templates/{templateCode}/status`
@@ -159,9 +184,9 @@ It authenticates users, enforces permissions, proxies allowed capabilities, and 
 - `POST /api/topbiz/messages/internal/tasks/dispatch/run`
 - `POST /api/topbiz/messages/internal/tasks/retry/run`
 
-## Log Gateway APIs
+## 日志网关接口
 
-### Log Query and Operation
+### 日志查询与操作接口
 
 - `POST /api/topbiz/logs/ingest`
 - `GET /api/topbiz/logs/search`
@@ -182,7 +207,7 @@ It authenticates users, enforces permissions, proxies allowed capabilities, and 
 - `POST /api/topbiz/logs/internal/tasks/exports/run`
 - `POST /api/topbiz/logs/internal/tasks/exports/cleanup`
 
-## Topbiz Permission Set
+## Topbiz 权限集合
 
 - `topbiz:admin`
 - `topbiz:platform:read`

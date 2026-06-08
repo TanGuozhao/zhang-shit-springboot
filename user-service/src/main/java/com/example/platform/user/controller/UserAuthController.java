@@ -3,6 +3,10 @@ package com.example.platform.user.controller;
 import com.example.platform.common.api.ApiResponse;
 import com.example.platform.user.dto.AuthLoginRequest;
 import com.example.platform.user.dto.AuthLoginResponse;
+import com.example.platform.user.dto.EmailCodeLoginRequest;
+import com.example.platform.user.dto.EmailLoginSendCodeRequest;
+import com.example.platform.user.dto.EmailLoginSendCodeResponse;
+import com.example.platform.user.dto.ThirdPartyLoginRequest;
 import com.example.platform.user.dto.UserRegistrationRequest;
 import com.example.platform.user.dto.UserRegistrationResponse;
 import com.example.platform.user.dto.VerifyCodeSendRequest;
@@ -33,6 +37,21 @@ public class UserAuthController {
     @PostMapping("/register")
     public ApiResponse<UserRegistrationResponse> register(@Valid @RequestBody UserRegistrationRequest request) {
         return ApiResponse.ok(userAuthService.register(request));
+    }
+
+    @PostMapping("/email/send-code")
+    public ApiResponse<EmailLoginSendCodeResponse> sendEmailLoginCode(@Valid @RequestBody EmailLoginSendCodeRequest request) {
+        return ApiResponse.ok(userAuthService.sendEmailLoginCode(request));
+    }
+
+    @PostMapping("/email/login")
+    public ApiResponse<AuthLoginResponse> loginByEmailCode(@Valid @RequestBody EmailCodeLoginRequest request) {
+        return ApiResponse.ok(userAuthService.loginByEmailCode(request));
+    }
+
+    @PostMapping("/third-party/login")
+    public ApiResponse<AuthLoginResponse> loginByThirdParty(@Valid @RequestBody ThirdPartyLoginRequest request) {
+        return ApiResponse.ok(userAuthService.loginByThirdParty(request));
     }
 
     @PostMapping("/login")

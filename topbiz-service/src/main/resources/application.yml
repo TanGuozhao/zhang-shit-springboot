@@ -18,6 +18,25 @@ shiro:
   unauthorizedUrl: /error/403
   userNativeSessionManager: false
 topbiz:
+  auth:
+    public-base-url: http://localhost:8080
+    oauth-state-ttl: 10m
+    qq:
+      enabled: true
+      mock-enabled: true
+      client-id: qq-demo-client-id
+      client-secret: qq-demo-client-secret
+      authorize-url: https://graph.qq.com/oauth2.0/authorize
+      scope: get_user_info
+      default-avatar-url: https://cdn.example.com/avatar/qq.png
+    wechat:
+      enabled: true
+      mock-enabled: true
+      client-id: wx-demo-appid
+      client-secret: wx-demo-secret
+      authorize-url: https://open.weixin.qq.com/connect/qrconnect
+      scope: snsapi_login
+      default-avatar-url: https://cdn.example.com/avatar/wechat.png
   orchestration:
     repository-type: memory
     jdbc:

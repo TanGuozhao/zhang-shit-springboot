@@ -75,6 +75,26 @@ public class UserAccountRepository {
                 .findFirst();
     }
 
+    public Optional<UserAccount> findByEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        String normalizedEmail = email.trim();
+        return users.values().stream()
+                .filter(user -> user.email() != null && user.email().equalsIgnoreCase(normalizedEmail))
+                .findFirst();
+    }
+
+    public Optional<UserAccount> findByPhone(String phone) {
+        if (phone == null || phone.isBlank()) {
+            return Optional.empty();
+        }
+        String normalizedPhone = phone.trim();
+        return users.values().stream()
+                .filter(user -> user.phone() != null && user.phone().equals(normalizedPhone))
+                .findFirst();
+    }
+
     public Optional<UserAccount> findByAccountAndContact(String account, String contact) {
         return findByAccount(account)
                 .filter(user -> matchesContact(user, contact));

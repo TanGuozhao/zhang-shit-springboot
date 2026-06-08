@@ -1,5 +1,6 @@
 package com.example.platform.topbiz;
 
+import com.example.platform.topbiz.config.TopbizAuthProperties;
 import com.example.platform.topbiz.config.TopbizRemoteProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,7 +15,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
                 "com.example.platform.common"
         })
 @EnableFeignClients(basePackages = "com.example.platform.topbiz.remote")
-@EnableConfigurationProperties(TopbizRemoteProperties.class)
+@EnableConfigurationProperties({TopbizRemoteProperties.class, TopbizAuthProperties.class})
 public class TopbizServiceApplication {
 
     public static void main(String[] args) {

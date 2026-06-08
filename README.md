@@ -42,10 +42,10 @@ Client / Frontend
 | 模块 | 职责 | 当前能力 | 默认端口 |
 | --- | --- | --- | --- |
 | `service-common` | 公共基础设施 | `ApiResponse`、全局异常、Trace 过滤器 | - |
-| `user-service` | 身份与组织能力 | 登录、会话校验、用户管理、角色权限、部门管理、自助接口 | `8081` |
+| `user-service` | 身份与组织能力 | 密码登录、邮箱验证码登录、第三方身份绑定骨架、用户管理、角色权限、部门管理、自助接口 | `8081` |
 | `message-service` | 消息通道能力 | 模板、变量、消息发送、草稿、任务调度、重试、收件箱、统计 | `8082` |
 | `log-service` | 访问日志能力 | 日志接入、检索、Trace 查询、指标、告警、导出、运行时接口 | `8083` |
-| `topbiz-service` | 对外网关与编排 | Shiro 鉴权、OpenFeign 网关、平台总览、跨服务编排、会话投影 | `8080` |
+| `topbiz-service` | 对外网关与编排 | Shiro 鉴权、OpenFeign 网关、邮箱验证码登录入口、OAuth 骨架、平台总览、跨服务编排、会话投影 | `8080` |
 
 ## topbiz 设计要点
 
@@ -63,6 +63,40 @@ Client / Frontend
 
 当前事务策略采用的是更适合微服务边界的 `Saga-like compensation`，而不是 XA / 2PC。
 
+当前认证职责边界已经明确：
+
+- `user-service` 负责底层身份主数据、验证码校验、第三方身份绑定以及底层 `sessionKey`
+- `topbiz-service` 负责对外认证入口、OAuth authorize/callback 和平台外层 Session
+
+## 认证能力现状
+
+当前已经落地的认证能力如下：
+
+- `user-service`
+  - `POST /api/users/auth/login`
+  - `POST /api/users/auth/email/send-code`
+  - `POST /api/users/auth/email/login`
+  - `POST /api/users/auth/third-party/login`
+- `topbiz-service`
+  - `POST /api/topbiz/auth/login`
+  - `POST /api/topbiz/auth/email/send-code`
+  - `POST /api/topbiz/auth/email/login`
+  - `GET /api/topbiz/auth/oauth/{provider}/authorize`
+  - `GET /api/topbiz/auth/oauth/{provider}/callback`
+
+当前开放的第三方 provider 入口为：
+
+- `QQ`
+- `WECHAT`
+
+这里要特别区分“接口骨架已交付”和“真实第三方接入已交付”：
+
+- 邮箱验证码登录已经具备正式代码骨架和测试覆盖
+- OAuth authorize/callback 已经具备正式代码骨架和测试覆盖
+- QQ/微信真实开放平台换码、资料拉取、正式风控与密钥治理尚未接入
+- `topbiz-service` 返回的平台 `sessionId` 是外层 Session 标识
+- `user-service` 返回的 `sessionKey` 会由 `topbiz-service` 持有并向下游透传
+
 ## 当前交付状态
 
 目前仓库已经完成以下基础交付：
@@ -72,10 +106,28 @@ Client / Frontend
 - `docs/contracts` 下的服务契约已经冻结
 - `topbiz-service` 已具备 `OpenFeign + Shiro + Session` 的完整链路
 - `user-service` 已具备最小可用的后台管理和自助能力
+- `user-service` 已补上邮箱验证码登录与第三方身份绑定正式代码骨架
 - `message-service` 已具备模板、任务、重试、收件箱和统计基线
 - `log-service` 已具备接入、检索、告警和导出基线
+- `topbiz-service` 已补上邮箱验证码登录入口、OAuth authorize/callback 骨架
 - `topbiz-service` 已补上生产可切换的 Redis Session 与 JDBC 编排持久化方案
 - 全仓测试可通过
+
+## 占位与可替换实现
+
+当前仓库里已经把核心扩展点抽象出来了，其中以下部分仍然是明确的占位实现：
+
+- `user-service` 的 `UserVerificationCodeSender`
+  - 默认实现为 `LoggingUserVerificationCodeSender`
+  - 当前只记录日志，不接真实邮件/SMS 服务商
+- `topbiz-service` 的 `TopbizOAuthProviderClient`
+  - 默认实现为 `MockTopbizOAuthProviderClient`
+  - 当前只做 mock 换码和 mock 用户资料构造，不接 QQ/微信真实开放平台
+- `topbiz-service` 的运行态持久化
+  - 本地默认使用 `Servlet Session + memory orchestration repository`
+  - `prod` profile 切换到 `Redis Session + JDBC orchestration repository`
+
+这些部分都已经具备正式接口，可以在不破坏上层契约的前提下替换。
 
 ## 技术栈
 
@@ -141,6 +193,38 @@ platform-parent
 - `user-service`: `8081`
 - `message-service`: `8082`
 - `log-service`: `8083`
+
+## 最小示例请求
+
+用户邮箱登录发码：
+
+```bash
+curl -X POST http://localhost:8081/api/users/auth/email/send-code ^
+  -H "Content-Type: application/json" ^
+  -d "{\"email\":\"email.login@example.com\"}"
+```
+
+用户邮箱验证码登录：
+
+```bash
+curl -X POST http://localhost:8081/api/users/auth/email/login ^
+  -H "Content-Type: application/json" ^
+  -d "{\"email\":\"email.login@example.com\",\"verifyCode\":\"123456\",\"autoRegister\":true,\"userName\":\"Email Login User\"}"
+```
+
+平台发起 QQ OAuth：
+
+```bash
+curl http://localhost:8080/api/topbiz/auth/oauth/qq/authorize
+```
+
+平台邮箱验证码登录：
+
+```bash
+curl -X POST http://localhost:8080/api/topbiz/auth/email/login ^
+  -H "Content-Type: application/json" ^
+  -d "{\"email\":\"email.login@example.com\",\"verifyCode\":\"123456\",\"autoRegister\":true,\"userName\":\"Email Login User\"}"
+```
 
 ## topbiz 运行模式
 
